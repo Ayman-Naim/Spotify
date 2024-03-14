@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  LibraryViewController.swift
 //  Spotify
 //
 //  Created by ayman on 11/03/2024.
@@ -7,13 +7,15 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class LibraryViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
 
+        view.backgroundColor = .systemBackground
+    }
+    
+
+  
 
 }
-
