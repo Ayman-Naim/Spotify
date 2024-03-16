@@ -8,7 +8,7 @@
 import Foundation
 final class AuthManger{
     static let shared = AuthManger()
-    
+    private var refreshingToke = false
     private init(){}
     
      var isSignedIn:Bool {
@@ -89,9 +89,33 @@ final class AuthManger{
         task.resume()
     }
     
-    
+    private var onRefreshBlocks = [((String)->Void)]()
+    /// supplies accsess toiken valid  to be used in api call
+    public func withValidToke(completion : @escaping (String)->Void){
+        //be sure that its not already refreshing
+        guard !refreshingToke else {
+            // append the completion
+            onRefreshBlocks.append(completion)
+            return
+        }
+        if shouldRefreshToken {
+            //refresh
+            refreshIfNeeded { success in
+                if let token = self.accessToken , success {
+                    completion(token)
+                }
+            }
+        }
+        else if let token = accessToken{
+            completion(token)
+            
+        }
+    }
     
     public func refreshIfNeeded(completion : @escaping ((Bool) -> Void)){
+        guard !refreshingToke else {
+            return
+        }
         guard shouldRefreshToken else {return
             completion(true)
         }
@@ -100,6 +124,7 @@ final class AuthManger{
         }
         // refresh token
         guard let url = URL(string: Constants.tokenAPIURL) else{return}
+        refreshingToke = true
         var components = URLComponents()
         components.queryItems = [
             URLQueryItem(name: "grant_type", value: "refresh_token"),
@@ -130,7 +155,10 @@ final class AuthManger{
             do{
                // let data1 = try JSONSerialization.jsonObject(with: data,options: .fragmentsAllowed)
                 //print(data1)
+                self?.refreshingToke = false
                 let result = try JSONDecoder().decode(AuthResponse.self, from: data)
+                self?.onRefreshBlocks.forEach{$0(result.access_token)}
+                self?.onRefreshBlocks.removeAll()
                 self?.cacheToken(result:result)
                 completion(true)
                 
